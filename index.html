@@ -3,6 +3,19 @@
 <head>
   <title>DuoChess</title>
 
+  <meta
+    name="apple-mobile-web-app-capable"
+    content="yes"
+  >
+  <meta
+    name="apple-mobile-web-app-title"
+    content="DuoChess"
+  >
+  <meta
+    name="apple-mobile-web-app-status-bar-style"
+    content="black-translucent"
+  >
+
   <link
     rel="stylesheet"
     href="./css/chessboard.css"
@@ -30,9 +43,13 @@
       padding: 0;
     }
 
-    body {
-      height: 100vh;
+    html {
       overflow: hidden;
+      background-color: #333;
+    }
+
+    body {
+      height: 90vh;
 
       display: flex;
       flex-direction: column;
@@ -41,8 +58,8 @@
     }
 
     .board {
-      height: 48vh;
-      width: 48vh;
+      height: 43vh;
+      width: 43vh;
       margin: 0 auto;
     }
 
@@ -120,8 +137,6 @@
       }
     }
 
-    // update the board position after the piece snap
-    // for castling, en passant, pawn promotion
     function onSnapEnd() {
       board_white.position(game.fen())
       board_black.position(game.fen())
@@ -132,7 +147,7 @@
       board_black.resize();
     });
 
-    jQuery('#board_black, #board_white').on('scroll touchmove touchend touchstart contextmenu', function (e) {
+    $('.board').on('scroll touchmove touchend touchstart contextmenu', e => {
       e.preventDefault();
     });
   </script>
