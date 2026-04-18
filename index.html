@@ -1,0 +1,142 @@
+<html>
+
+<head>
+  <title>DuoChess</title>
+
+  <link
+    rel="stylesheet"
+    href="./css/chessboard.css"
+  />
+
+  <script
+    type="text/javascript"
+    src="./js/jquery.js"
+  ></script>
+
+  <script
+    type="text/javascript"
+    src="./js/chess.js"
+  ></script>
+
+  <script
+    type="text/javascript"
+    src="./js/chessboard.js"
+  ></script>
+
+  <style type="text/css">
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      height: 100vh;
+      overflow: hidden;
+
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .board {
+      height: 48vh;
+      width: 48vh;
+      margin: 0 auto;
+    }
+
+    #middle {
+      height: 4vh;
+
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #board_black,
+    body>img[data-orientation="black"] {
+      transform: rotate(180deg);
+    }
+  </style>
+
+</head>
+
+<body>
+  <div
+    id="board_black"
+    class="board"
+  ></div>
+  <div id="middle">Middle</div>
+  <div
+    id="board_white"
+    class="board"
+  ></div>
+
+  <script type="text/javascript">
+    const game = new Chess();
+
+    const board_black = Chessboard('board_black', {
+      position: 'start',
+      orientation: 'black',
+      draggable: true,
+      onDragStart,
+      onDrop,
+      onSnapEnd,
+    });
+
+    const board_white = Chessboard('board_white', {
+      position: 'start',
+      draggable: true,
+      onDragStart,
+      onDrop,
+      onSnapEnd,
+    });
+
+    function onDragStart(source, piece, position, orientation) {
+      // do not pick up pieces if the game is over
+      if (game.isGameOver()) return false;
+
+      // only pick up pieces for the side to move
+      if ((game.turn() === 'w' && piece.search(/^b/) !== -1) ||
+        (game.turn() === 'b' && piece.search(/^w/) !== -1)) {
+        return false;
+      }
+    }
+
+    function onDrop(source, target) {
+      try {
+        // see if the move is legal
+        var move = game.move({
+          from: source,
+          to: target,
+          promotion: 'q' // NOTE: always promote to a queen for example simplicity
+        })
+
+      } catch (err) {
+        // illegal move
+        return 'snapback';
+      }
+    }
+
+    // update the board position after the piece snap
+    // for castling, en passant, pawn promotion
+    function onSnapEnd() {
+      board_white.position(game.fen())
+      board_black.position(game.fen())
+    }
+
+    $(window).resize(() => {
+      board_white.resize();
+      board_black.resize();
+    });
+
+    jQuery('#board_black, #board_white').on('scroll touchmove touchend touchstart contextmenu', function (e) {
+      e.preventDefault();
+    });
+  </script>
+
+</body>
+
+</html>
