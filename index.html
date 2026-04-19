@@ -72,11 +72,12 @@
       align-items: center;
       justify-content: center;
 
-      border: 2px solid transparent;
-      border-radius: 4px;
+      border: 0.4vh solid transparent;
+      border-radius: 0.4vh;
       transition: border-color 0.25s ease;
 
       >div {
+
         >div {
           border: none;
         }
@@ -169,6 +170,13 @@
   <script type="text/javascript">
     const game = new Chess();
 
+    const audio_move = new Audio('./audio/move.mp3');
+    const audio_capture = new Audio('./audio/capture.mp3');
+    const audio_promote = new Audio('./audio/promote.mp3');
+    const audio_check = new Audio('./audio/check.mp3');
+    const audio_checkmate = new Audio('./audio/checkmate.mp3');
+    const audio_castle = new Audio('./audio/castle.mp3');
+
     const board_black = Chessboard('board_black', {
       position: 'start',
       orientation: 'black',
@@ -203,11 +211,33 @@
     function onDrop(source, target) {
       try {
         // see if the move is legal
-        var move = game.move({
+        const move = game.move({
           from: source,
           to: target,
           promotion: 'q' // NOTE: always promote to a queen for example simplicity
-        })
+        });
+
+        console.log(move);
+
+        if (game.isCheckmate()) {
+          audio_checkmate.currentTime = 0;
+          audio_checkmate.play();
+        } else if (move.flags.includes('k') || move.flags.includes('q')) {
+          audio_castle.currentTime = 0;
+          audio_castle.play();
+        } else if (game.isCheck()) {
+          audio_check.currentTime = 0;
+          audio_check.play();
+        } else if (move.promotion) {
+          audio_promote.currentTime = 0;
+          audio_promote.play();
+        } else if (move.captured) {
+          audio_capture.currentTime = 0;
+          audio_capture.play();
+        } else {
+          audio_move.currentTime = 0;
+          audio_move.play();
+        }
 
       } catch (err) {
         // illegal move
