@@ -4,6 +4,10 @@
   <title>DuoChess</title>
 
   <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  >
+  <meta
     name="apple-mobile-web-app-capable"
     content="yes"
   >
@@ -90,6 +94,8 @@
             background-color: rgba(0, 0, 0, 0.25);
             top: 30%;
             left: 30%;
+
+            pointer-events: none;
           }
 
           .is-selected {
@@ -98,7 +104,7 @@
 
           .is-move-from,
           .is-move-to {
-            box-shadow: inset 0 0 1vh rgb(0, 255, 217);
+            box-shadow: inset 0 0 1vh rgb(255, 230, 0);
           }
 
           .is-check {
@@ -230,108 +236,65 @@
     const board_black = Chessboard('board_black', {
       position: 'start',
       orientation: 'black',
-      draggable: true,
-      onDragStart,
-      onDrop,
-      onSnapEnd,
+      draggable: false,
     });
 
     const board_white = Chessboard('board_white', {
       position: 'start',
-      draggable: true,
-      onDragStart,
-      onDrop,
-      onSnapEnd,
-      onChange: () => {
-        onGameState();
-      },
+      draggable: false,
     });
 
-    function onDragStart(source, piece, position, orientation) {
-      // do not pick up pieces if the game is over
-      if (game.isGameOver()) return false;
-
-      // only pick up pieces for the side to move
-      if ((game.turn() === 'w' && piece.search(/^b/) !== -1) ||
-        (game.turn() === 'b' && piece.search(/^w/) !== -1)) {
-        return false;
-      }
-    }
-
-    function move({
-      source,
-      target,
-      setPosition = true,
-    }) {
-      try {
-        // see if the move is legal
-        const move = game.move({
-          from: source,
-          to: target,
-          promotion: 'q' // NOTE: always promote to a queen for example simplicity
-        });
-
-        if (setPosition) {
-          board_white.position(game.fen());
-          board_black.position(game.fen());
-        }
-
-        if (game.isCheckmate()) {
-          playSound('checkmate');
-        } else if (move.flags.includes('k') || move.flags.includes('q')) {
-          playSound('castle');
-        } else if (game.isCheck()) {
-          playSound('check');
-        } else if (move.promotion) {
-          playSound('promote');
-        } else if (move.captured) {
-          playSound('capture');
-        } else {
-          playSound('move');
-        }
-
-        // Reset all classes
-        $('.is-move-from').removeClass('is-move-from');
-        $('.is-move-to').removeClass('is-move-to');
-        $('.is-move-target').removeClass('is-move-target');
-        $('.is-selected').removeClass('is-selected');
-        $('.is-check').removeClass('is-check');
-
-        // Set move from & to classes
-        const turn = game.turn();
-        const $board = turn === 'w'
-          ? $('#board_white')
-          : $('#board_black');
-
-        $('.square-' + move.from, $board).addClass('is-move-from');
-        $('.square-' + move.to, $board).addClass('is-move-to');
-
-        // Set check class if in check
-        if (game.isCheck()) {
-          console.log('Check!', game);
-          const [kingSquare] = game.findPiece({
-            type: 'k',
-            color: turn,
-          });
-          $('.square-' + kingSquare).addClass('is-check');
-        }
-      } catch (err) {
-        // illegal move
-        return 'snapback';
-      }
-    }
-
-    function onDrop(source, target) {
-      move({
-        source,
-        target,
-        setPosition: false,
+    function move(from, to) {
+      // see if the move is legal
+      const move = game.move({
+        from,
+        to,
+        promotion: 'q' // NOTE: always promote to a queen for example simplicity
       });
-    }
 
-    function onSnapEnd() {
       board_white.position(game.fen());
       board_black.position(game.fen());
+
+      if (game.isCheckmate()) {
+        playSound('checkmate');
+      } else if (move.flags.includes('k') || move.flags.includes('q')) {
+        playSound('castle');
+      } else if (game.isCheck()) {
+        playSound('check');
+      } else if (move.promotion) {
+        playSound('promote');
+      } else if (move.captured) {
+        playSound('capture');
+      } else {
+        playSound('move');
+      }
+
+      // Reset all classes
+      $('.is-move-from').removeClass('is-move-from');
+      $('.is-move-to').removeClass('is-move-to');
+      $('.is-move-target').removeClass('is-move-target');
+      $('.is-selected').removeClass('is-selected');
+      $('.is-check').removeClass('is-check');
+
+      // Set move from & to classes
+      const turn = game.turn();
+      const $board = turn === 'w'
+        ? $('#board_white')
+        : $('#board_black');
+
+      $('.square-' + move.from, $board).addClass('is-move-from');
+      $('.square-' + move.to, $board).addClass('is-move-to');
+
+      // Set check class if in check
+      if (game.isCheck()) {
+        const [kingSquare] = game.findPiece({
+          type: 'k',
+          color: turn,
+        });
+        $('.square-' + kingSquare).addClass('is-check');
+      }
+
+      onGameState();
     }
 
     function onResize() {
@@ -377,11 +340,7 @@
         const from = $('.is-selected', $board).data('square');
         const to = square;
 
-        return move({
-          source: from,
-          target: to,
-          setPosition: true,
-        });
+        return move(from, to);
       }
 
       if ($square.hasClass('is-selected')) {
