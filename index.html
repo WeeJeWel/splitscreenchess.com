@@ -155,13 +155,37 @@
       backdrop-filter: blur(10px);
 
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
 
-      color: white;
-      font-size: 10vh;
-
       visibility: hidden;
+
+      font-family: Helvetica, sans-serif;
+
+      >.title {
+        color: white;
+        font-size: 16vmin;
+        font-weight: bold;
+
+        margin-bottom: 4vmin;
+      }
+
+      >.button {
+        font-size: 6vmin;
+        color: rgba(255, 255, 255, 0.8);
+
+        background: rgba(255, 255, 255, 0.1);
+        padding: 4vmin 8vmin;
+
+        border: 0.2vh solid rgba(255, 255, 255, 0.25);
+        border-radius: 100vh;
+
+        box-shadow: 0 0 1vh rgba(0, 0, 0, 0.25);
+        text-shadow: 0 0 1vh rgba(0, 0, 0, 0.25);
+
+        cursor: pointer;
+      }
     }
 
     body.is-checkmate #overlay-checkmate,
@@ -190,14 +214,24 @@
   <div
     class="overlay"
     id="overlay-draw"
-  >Draw</div>
+  >
+    <span class="title">Draw</span>
+    <span class="button">New Game</span>
+  </div>
 
   <div
     class="overlay"
     id="overlay-checkmate"
-  >Checkmate</div>
+  >
+    <span class="title">Checkmate</span>
+    <span class="button">New Game</span>
+  </div>
 
   <script type="module">
+    $('.overlay .button').on('click', () => {
+      window.location.reload();
+    });
+
     // Initialze Sounds
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     const audioContext = new AudioContext();
