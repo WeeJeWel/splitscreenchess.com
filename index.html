@@ -80,6 +80,30 @@
 
         >div {
           border: none;
+
+          .is-move-target:before {
+            content: '';
+            position: absolute;
+            width: 40%;
+            height: 40%;
+            border-radius: 50%;
+            background-color: rgba(0, 0, 0, 0.25);
+            top: 30%;
+            left: 30%;
+          }
+
+          .is-selected {
+            box-shadow: inset 0 0 1vh rgb(0, 200, 255);
+          }
+
+          .is-move-from,
+          .is-move-to {
+            box-shadow: inset 0 0 1vh rgb(0, 255, 217);
+          }
+
+          .is-check {
+            box-shadow: inset 0 0 2vh rgb(255, 0, 0, 1.0);
+          }
         }
       }
     }
@@ -167,15 +191,41 @@
     id="overlay-checkmate"
   >Checkmate</div>
 
-  <script type="text/javascript">
-    const game = new Chess();
+  <script type="module">
+    // Initialze Sounds
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const audioContext = new AudioContext();
 
-    const audio_move = new Audio('./audio/move.mp3');
-    const audio_capture = new Audio('./audio/capture.mp3');
-    const audio_promote = new Audio('./audio/promote.mp3');
-    const audio_check = new Audio('./audio/check.mp3');
-    const audio_checkmate = new Audio('./audio/checkmate.mp3');
-    const audio_castle = new Audio('./audio/castle.mp3');
+    const SOUNDS = {
+      move: './audio/move.wav',
+      capture: './audio/capture.wav',
+      promote: './audio/promote.wav',
+      check: './audio/check.wav',
+      checkmate: './audio/checkmate.wav',
+      castle: './audio/castle.wav',
+    };
+
+    const soundBuffers = {};
+
+    // Preload all Sounds
+    await Promise.all(Object.entries(SOUNDS).map(async ([soundId, url]) => {
+      soundBuffers[soundId] = await fetch(url)
+        .then(res => res.arrayBuffer())
+        .then(data => audioContext.decodeAudioData(data));
+    }));
+
+    function playSound(soundId) {
+      const buffer = soundBuffers[soundId];
+      if (!buffer) return;
+
+      const source = audioContext.createBufferSource();
+      source.buffer = buffer;
+      source.connect(audioContext.destination);
+      source.start(0);
+    }
+
+    // Initialize Chess Game
+    const game = new Chess();
 
     const board_black = Chessboard('board_black', {
       position: 'start',
@@ -208,7 +258,11 @@
       }
     }
 
-    function onDrop(source, target) {
+    function move({
+      source,
+      target,
+      setPosition = true,
+    }) {
       try {
         // see if the move is legal
         const move = game.move({
@@ -217,32 +271,62 @@
           promotion: 'q' // NOTE: always promote to a queen for example simplicity
         });
 
-        console.log(move);
-
-        if (game.isCheckmate()) {
-          audio_checkmate.currentTime = 0;
-          audio_checkmate.play();
-        } else if (move.flags.includes('k') || move.flags.includes('q')) {
-          audio_castle.currentTime = 0;
-          audio_castle.play();
-        } else if (game.isCheck()) {
-          audio_check.currentTime = 0;
-          audio_check.play();
-        } else if (move.promotion) {
-          audio_promote.currentTime = 0;
-          audio_promote.play();
-        } else if (move.captured) {
-          audio_capture.currentTime = 0;
-          audio_capture.play();
-        } else {
-          audio_move.currentTime = 0;
-          audio_move.play();
+        if (setPosition) {
+          board_white.position(game.fen());
+          board_black.position(game.fen());
         }
 
+        if (game.isCheckmate()) {
+          playSound('checkmate');
+        } else if (move.flags.includes('k') || move.flags.includes('q')) {
+          playSound('castle');
+        } else if (game.isCheck()) {
+          playSound('check');
+        } else if (move.promotion) {
+          playSound('promote');
+        } else if (move.captured) {
+          playSound('capture');
+        } else {
+          playSound('move');
+        }
+
+        // Reset all classes
+        $('.is-move-from').removeClass('is-move-from');
+        $('.is-move-to').removeClass('is-move-to');
+        $('.is-move-target').removeClass('is-move-target');
+        $('.is-selected').removeClass('is-selected');
+        $('.is-check').removeClass('is-check');
+
+        // Set move from & to classes
+        const turn = game.turn();
+        const $board = turn === 'w'
+          ? $('#board_white')
+          : $('#board_black');
+
+        $('.square-' + move.from, $board).addClass('is-move-from');
+        $('.square-' + move.to, $board).addClass('is-move-to');
+
+        // Set check class if in check
+        if (game.isCheck()) {
+          console.log('Check!', game);
+          const [kingSquare] = game.findPiece({
+            type: 'k',
+            color: turn,
+          });
+          $('.square-' + kingSquare).addClass('is-check');
+        }
       } catch (err) {
         // illegal move
         return 'snapback';
       }
+    }
+
+    function onDrop(source, target) {
+      move({
+        source,
+        target,
+        setPosition: false,
+      });
     }
 
     function onSnapEnd() {
@@ -281,6 +365,55 @@
 
     $('.board').on('scroll touchmove touchend touchstart contextmenu', e => {
       e.preventDefault();
+    });
+
+    $('.board [data-square]').on('pointerdown', e => {
+      const $square = $(e.currentTarget);
+      const square = $square.data('square');
+
+      const $board = $square.closest('.board');
+
+      if ($square.hasClass('is-move-target')) {
+        const from = $('.is-selected', $board).data('square');
+        const to = square;
+
+        return move({
+          source: from,
+          target: to,
+          setPosition: true,
+        });
+      }
+
+      if ($square.hasClass('is-selected')) {
+        $square.removeClass('is-selected');
+        return;
+      }
+
+      $('.is-selected', $board).removeClass('is-selected');
+
+      const $piece = $square.find('[data-piece]');
+      if (!$piece.length) return;
+      const piece = $piece.data('piece');
+
+      // Check if piece belongs to the current player
+      const turn = game.turn();
+      if ((turn === 'w' && piece.search(/^b/) !== -1) ||
+        (turn === 'b' && piece.search(/^w/) !== -1)) {
+        return;
+      }
+
+      $square.addClass('is-selected');
+
+      // get list of possible moves for this square
+      const moves = game.moves({
+        square,
+        verbose: true
+      });
+
+      $('.is-move-target', $board).removeClass('is-move-target');
+      for (const move of moves) {
+        $(`.square-${move.to}`, $board).addClass('is-move-target');
+      }
     });
   </script>
 
