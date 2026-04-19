@@ -259,7 +259,7 @@
         playSound('checkmate');
       } else if (move.flags.includes('k') || move.flags.includes('q')) {
         playSound('castle');
-      } else if (game.isCheck()) {
+      } else if (game.inCheck()) {
         playSound('check');
       } else if (move.promotion) {
         playSound('promote');
@@ -286,7 +286,7 @@
       $('.square-' + move.to, $board).addClass('is-move-to');
 
       // Set check class if in check
-      if (game.isCheck()) {
+      if (game.inCheck()) {
         const [kingSquare] = game.findPiece({
           type: 'k',
           color: turn,
