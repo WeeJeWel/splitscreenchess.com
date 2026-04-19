@@ -72,6 +72,10 @@
       align-items: center;
       justify-content: center;
 
+      border: 2px solid transparent;
+      border-radius: 4px;
+      transition: border-color 0.25s ease;
+
       >div {
         >div {
           border: none;
@@ -97,6 +101,42 @@
     body.is-resizing .board>div {
       display: none;
     }
+
+    body[data-turn="w"] #board_black,
+    body[data-turn="b"] #board_white {
+      pointer-events: none;
+    }
+
+    body[data-turn="w"] #board_white,
+    body[data-turn="b"] #board_black {
+      border-color: white;
+    }
+
+    .overlay {
+      position: absolute;
+      z-index: 10;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+
+      background-color: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(10px);
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      color: white;
+      font-size: 10vh;
+
+      visibility: hidden;
+    }
+
+    body.is-checkmate #overlay-checkmate,
+    body.is-draw #overlay-draw {
+      visibility: visible;
+    }
   </style>
 
 </head>
@@ -107,12 +147,24 @@
       id="board_black"
       class="board"
     ></div>
+
     <div id="middle"></div>
+
     <div
       id="board_white"
       class="board"
     ></div>
   </div>
+
+  <div
+    class="overlay"
+    id="overlay-draw"
+  >Draw</div>
+
+  <div
+    class="overlay"
+    id="overlay-checkmate"
+  >Checkmate</div>
 
   <script type="text/javascript">
     const game = new Chess();
@@ -132,6 +184,9 @@
       onDragStart,
       onDrop,
       onSnapEnd,
+      onChange: () => {
+        onGameState();
+      },
     });
 
     function onDragStart(source, piece, position, orientation) {
@@ -161,8 +216,8 @@
     }
 
     function onSnapEnd() {
-      board_white.position(game.fen())
-      board_black.position(game.fen())
+      board_white.position(game.fen());
+      board_black.position(game.fen());
     }
 
     function onResize() {
@@ -180,7 +235,15 @@
       document.body.classList.remove('is-resizing');
     }
 
+    function onGameState() {
+      document.body.classList.toggle('is-check', game.inCheck());
+      document.body.classList.toggle('is-checkmate', game.isCheckmate());
+      document.body.classList.toggle('is-draw', game.isDraw());
+      document.body.dataset.turn = game.turn();
+    }
+
     onResize();
+    onGameState();
 
     $(window).resize(() => {
       onResize();
