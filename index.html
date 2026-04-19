@@ -45,11 +45,15 @@
 
     html {
       overflow: hidden;
-      background-color: #333;
+      background-color: black;
     }
 
-    body {
-      height: 90vh;
+    #app {
+      position: absolute;
+      top: env(safe-area-inset-top);
+      right: env(safe-area-inset-right);
+      bottom: env(safe-area-inset-bottom);
+      left: env(safe-area-inset-left);
 
       display: flex;
       flex-direction: column;
@@ -58,13 +62,26 @@
     }
 
     .board {
-      height: 43vh;
-      width: 43vh;
-      margin: 0 auto;
+      flex-grow: 1;
+      flex-shrink: 0;
+      aspect-ratio: 1;
+
+      overflow: hidden;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      >div {
+        >div {
+          border: none;
+        }
+      }
     }
 
     #middle {
-      height: 4vh;
+      flex-shrink: 0;
+      height: 2vh;
 
       display: flex;
       flex-direction: column;
@@ -76,20 +93,26 @@
     body>img[data-orientation="black"] {
       transform: rotate(180deg);
     }
+
+    body.is-resizing .board>div {
+      display: none;
+    }
   </style>
 
 </head>
 
 <body>
-  <div
-    id="board_black"
-    class="board"
-  ></div>
-  <div id="middle">Middle</div>
-  <div
-    id="board_white"
-    class="board"
-  ></div>
+  <div id="app">
+    <div
+      id="board_black"
+      class="board"
+    ></div>
+    <div id="middle"></div>
+    <div
+      id="board_white"
+      class="board"
+    ></div>
+  </div>
 
   <script type="text/javascript">
     const game = new Chess();
@@ -142,9 +165,25 @@
       board_black.position(game.fen())
     }
 
-    $(window).resize(() => {
+    function onResize() {
+      document.body.classList.add('is-resizing');
+
+      const size = document.getElementById('board_black').clientHeight;
+      document.getElementById('board_black').style.width = size + 'px';
+      document.getElementById('board_black').style.height = size + 'px';
+      document.getElementById('board_white').style.width = size + 'px';
+      document.getElementById('board_white').style.height = size + 'px';
+
       board_white.resize();
       board_black.resize();
+
+      document.body.classList.remove('is-resizing');
+    }
+
+    onResize();
+
+    $(window).resize(() => {
+      onResize();
     });
 
     $('.board').on('scroll touchmove touchend touchstart contextmenu', e => {
