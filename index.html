@@ -13,7 +13,7 @@
   >
   <meta
     name="apple-mobile-web-app-title"
-    content="DuoChess"
+    content="Split Screen Chess"
   >
   <meta
     name="apple-mobile-web-app-status-bar-style"
@@ -236,20 +236,20 @@
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     const audioContext = new AudioContext();
 
-    const SOUNDS = {
-      move: './audio/move.wav',
-      capture: './audio/capture.wav',
-      promote: './audio/promote.wav',
-      check: './audio/check.wav',
-      checkmate: './audio/checkmate.wav',
-      castle: './audio/castle.wav',
-    };
+    const SOUNDS = [
+      'move',
+      'capture',
+      'promote',
+      'check',
+      'checkmate',
+      'castle',
+    ];
 
     const soundBuffers = {};
 
     // Preload all Sounds
-    await Promise.all(Object.entries(SOUNDS).map(async ([soundId, url]) => {
-      soundBuffers[soundId] = await fetch(url)
+    await Promise.all(SOUNDS.map(async soundId => {
+      soundBuffers[soundId] = await fetch(`./sounds/${soundId}.wav`)
         .then(res => res.arrayBuffer())
         .then(data => audioContext.decodeAudioData(data));
     }));
@@ -271,11 +271,13 @@
       position: 'start',
       orientation: 'black',
       draggable: false,
+      pieceTheme: './images/chesspieces/wikipedia/{piece}.svg',
     });
 
     const board_white = Chessboard('board_white', {
       position: 'start',
       draggable: false,
+      pieceTheme: './images/chesspieces/wikipedia/{piece}.svg',
     });
 
     function move(from, to) {
